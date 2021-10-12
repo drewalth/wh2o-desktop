@@ -1,18 +1,16 @@
-import {ipcMain} from 'electron'
+import express from 'express'
+import cors from 'cors'
 
-import Store from 'electron-store'
-const store = new Store();
-const foo = store.get('foo')
+const app = express()
 
+app.use(cors({
+    origin: 'http://localhost:3000'
+}))
 
-console.log('FOO', store.get('foo'))
-if(!foo) {
-    store.set('foo', 'BAR')
-    console.log(store.get('foo'))
-}
+app.get('/', (req, res) => {
+    res.send('hello world')
+})
 
+const server = app.listen(3001, () => console.log('express server listening'))
 
-
-ipcMain.on("notify", (_, message) => {
-    console.log('NOTIFY: ', message)
-});
+module.exports = app

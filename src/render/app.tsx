@@ -1,24 +1,15 @@
 import React, {useEffect} from 'react';
 import * as ReactDOM from 'react-dom';
 import axios from 'axios'
-import * as Electron from "electron";
 
-
-declare global {
-    interface Window {electron: any}
-}
-
-const electron = window.electron
 
 const load = async () => {
-    // try {
-    //     const result = await axios.get('https://pokeapi.co/api/v2/pokemon/ditto')
-    //     console.log(result)
-    // } catch (e) {
-    //     console.error(e)
-    // }
-
-    electron.notificationApi.sendNotification('AYOOO')
+    try {
+        const result = await axios.get('http://localhost:3001').then(res => res.data)
+        console.log(result)
+    } catch (e) {
+        console.error(e)
+    }
 }
 
 
