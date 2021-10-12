@@ -25,4 +25,4 @@
  *  });
  * ```
  */
-import './render/app';
+import './render/components/App/App';

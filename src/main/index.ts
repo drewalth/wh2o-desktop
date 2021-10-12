@@ -17,14 +17,21 @@ const sequelize = new Sequelize({
 const Gage = sequelize.define('gage', {
     name: DataType.STRING,
     siteId: DataType.STRING,
+    source: DataType.STRING
 }, {
     timestamps: true
 })
 
-sequelize.sync({force: true})
+sequelize.sync({force: false})
 
-app.post('/gage', async (req,res) => {
-    console.log(req.body)
+app.post('/gage', (req,res) => {
+    Gage.create(req.body).then(result => {
+        console.log(result)
+        res.send(result)
+    }).catch(e => {
+        console.error(e)
+        res.send('failure').status(500)
+    })
 })
 
 app.get('/gage', (req, res) => {
