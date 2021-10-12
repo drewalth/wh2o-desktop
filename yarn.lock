@@ -444,7 +444,7 @@
   "resolved" "https://registry.npmjs.org/@tootallnate/once/-/once-1.1.2.tgz"
   "version" "1.1.2"
 
-"@types/body-parser@*", "@types/body-parser@^1.19.1":
+"@types/body-parser@*":
   "integrity" "sha1-DAF0xCp9AXuBgwPUtdlpywt1kpw="
   "resolved" "https://sovrn.jfrog.io/artifactory/api/npm/npm/@types/body-parser/-/body-parser-1.19.1.tgz"
   "version" "1.19.1"
@@ -1236,7 +1236,7 @@
   "resolved" "https://registry.npmjs.org/bluebird/-/bluebird-3.7.2.tgz"
   "version" "3.7.2"
 
-"body-parser@^1.19.0", "body-parser@1.19.0":
+"body-parser@1.19.0":
   "integrity" "sha1-lrJwnlfJxOCab9Zqj9l5hE9p8Io="
   "resolved" "https://sovrn.jfrog.io/artifactory/api/npm/npm/body-parser/-/body-parser-1.19.0.tgz"
   "version" "1.19.0"

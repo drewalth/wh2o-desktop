@@ -1,10 +1,10 @@
 import {Sequelize, DataType} from "sequelize-typescript";
 import express from 'express'
 import cors from 'cors'
-import bodyParser from "body-parser";
 
 const app = express()
-app.use(bodyParser.urlencoded({extended: false}))
+app.use(express.urlencoded({extended: true}));
+app.use(express.json());
 app.use(cors({
     origin: 'http://localhost:3000'
 }))
