@@ -3,6 +3,7 @@ import {Button, Modal, Table, notification} from 'antd'
 import {DeleteOutlined} from "@ant-design/icons";
 import {useGagesContext} from "../Provider/GageProvider/GageContext";
 import {httpClient} from "../../lib";
+import {Gage} from "../../../types";
 
 
 const GageTable = ():JSX.Element => {
@@ -20,7 +21,8 @@ const GageTable = ():JSX.Element => {
         {
             title: 'Reading',
             dataIndex: 'reading',
-            key: 'reading'
+            key: 'reading',
+            render: (reading: number, val: Gage) => (<>{reading + ' ' + val.metric }</>)
         },
         {
             title: 'Delta',

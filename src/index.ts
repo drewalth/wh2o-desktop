@@ -65,7 +65,7 @@ app.whenReady().then(() => {
     callback({
       responseHeaders: {
         ...details.responseHeaders,
-        'Content-Security-Policy': ["default-src 'self' 'unsafe-inline' http://localhost:3001 data:; script-src 'self' 'unsafe-eval'"]
+        'Content-Security-Policy': ["default-src 'self' 'unsafe-inline' http://localhost:3001 http://waterservices.usgs.gov data:; script-src 'self' 'unsafe-eval'"]
       }
     })
   })
