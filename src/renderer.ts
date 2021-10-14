@@ -25,4 +25,5 @@
  *  });
  * ```
  */
+import 'antd/dist/antd.css';
 import './render/components/App/App';

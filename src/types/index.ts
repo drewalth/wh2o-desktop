@@ -7,6 +7,8 @@ export type Gage = {
     name: string
     source: GageSource
     siteId: string
+    reading: number
+    delta: number
     createdAt: Date
     updatedAt: Date
 }
