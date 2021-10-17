@@ -1,41 +1,45 @@
-import {createContext, useState, useContext, useEffect} from "react";
-import {Gage, RequestStatus} from "../../../../types";
-import {httpClient} from "../../../lib";
+import { createContext, useState, useContext, useEffect } from 'react'
+import { Gage, GageEntry } from '../../../../types'
+import { httpClient } from '../../../lib'
+import { useSocket } from '../../../hooks'
+import * as socketEvents from '../../../../socketEvents'
+import { notification } from 'antd'
 
 type GageContextData = {
-    requestStatus: RequestStatus
-    gages: Gage[]
-    loadGages: () => Promise<void>
+  gages: Gage[]
+  gageSources: GageEntry[]
+  loadGageSources: (state: string) => Promise<void>
 }
 
 export const GageContext = createContext({} as GageContextData)
 
-export const useGages = ():GageContextData => {
-    const [requestStatus, setRequestStatus] = useState<RequestStatus>('loading')
-    const [gages, setGages] = useState<Gage[]>([])
+export const useGages = (): GageContextData => {
+  const [gages, setGages] = useState<Gage[]>([])
+  const [gageSources, setGageSources] = useState<GageEntry[]>([])
+  const socket = useSocket()
 
-    const loadGages = async () => {
-        try {
-            setRequestStatus('loading')
-            const gages = await httpClient.get('/gage').then(res => res.data)
-            setGages(gages)
-            setRequestStatus('success')
-        } catch (e) {
-            console.error(e)
-            setRequestStatus('failure')
-        }
+  const loadGageSources = async (state: string) => {
+    try {
+      const data: { state: string; gages: GageEntry[] } = await httpClient
+        .get(`/gage-sources?state=${state}`)
+        .then((res) => res.data)
+      setGageSources(data.gages)
+    } catch (e) {
+      console.error(e)
     }
+  }
 
-    useEffect(() => {
-        loadGages()
-    }, [])
+  useEffect(() => {
+    socket.on(socketEvents.LOAD_GAGES, (gages: Gage[]) => {
+      setGages(gages)
+    })
+  }, [])
 
-
-    return {
-        gages,
-        requestStatus,
-        loadGages
-    }
+  return {
+    gages,
+    gageSources,
+    loadGageSources,
+  }
 }
 
-export const useGagesContext = ():GageContextData => useContext(GageContext)
+export const useGagesContext = (): GageContextData => useContext(GageContext)

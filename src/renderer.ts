@@ -25,5 +25,5 @@
  *  });
  * ```
  */
-import 'antd/dist/antd.css';
-import './render/components/App/App';
+import 'antd/dist/antd.css'
+import './render/components/App/App'
