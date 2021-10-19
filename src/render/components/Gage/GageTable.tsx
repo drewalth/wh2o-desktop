@@ -1,10 +1,43 @@
-import React, { useState } from 'react'
-import { Button, Modal, Table, notification } from 'antd'
+import React, { useEffect, useState } from 'react'
+import { Button, Modal, Table, notification, Select } from 'antd'
 import { DeleteOutlined } from '@ant-design/icons'
-import { useGagesContext } from '../Provider/GageProvider/GageContext'
+import { useGagesContext } from '../Provider/GageProvider'
 import { httpClient } from '../../lib'
 import moment from 'moment'
-import { Gage } from '../../../types'
+import { Gage, GageReading } from '../../../types'
+
+type ReadingSelectProps = {
+  readings: GageReading[]
+}
+
+const ReadingSelect = ({ readings }: ReadingSelectProps): JSX.Element => {
+  const [activeMetric, setAcitveMetric] = useState('CFS')
+  const [reading, setReading] = useState<number>()
+  const metrics = Array.from(new Set(readings.map((r) => r.metric)))
+  useEffect(() => {
+    const val = readings.filter((r) => r.metric === activeMetric)[0]?.value
+
+    setReading(val)
+  }, [activeMetric, readings])
+
+  return (
+    <div>
+      {reading}
+      {metrics.length > 0 && (
+        <Select
+          defaultValue={'CFS'}
+          bordered={false}
+          size={'small'}
+          onSelect={(val) => setAcitveMetric(val)}
+        >
+          {metrics.map((m) => (
+            <Select.Option value={m}>{m}</Select.Option>
+          ))}
+        </Select>
+      )}
+    </div>
+  )
+}
 
 const GageTable = (): JSX.Element => {
   const { gages } = useGagesContext()
@@ -21,7 +54,9 @@ const GageTable = (): JSX.Element => {
       title: 'Reading',
       dataIndex: 'reading',
       key: 'reading',
-      render: (reading: number, val: Gage) => <>{reading + ' ' + val.metric}</>,
+      render: (reading: number, val: Gage) => {
+        return <ReadingSelect readings={val.readings} />
+      },
     },
     {
       title: 'Delta',

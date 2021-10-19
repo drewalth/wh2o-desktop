@@ -1,13 +1,21 @@
 import React, { useEffect, useState } from 'react'
 import { useAlertsContext } from '../Provider/AlertProvider'
-import { Table } from 'antd'
+import { Button, Table } from 'antd'
 import { Alert } from '../../../types'
 import { useGagesContext } from '../Provider/GageProvider'
+import { DeleteOutlined } from '@ant-design/icons'
+import { useSocket } from '../../hooks'
+import * as socketEvents from '../../../socketEvents'
 
 export const AlertTable = (): JSX.Element => {
   const { alerts } = useAlertsContext()
   const { gages } = useGagesContext()
   const [columns, setColumns] = useState([])
+  const socket = useSocket()
+
+  const handleDelete = (val: number) => {
+    socket.emit(socketEvents.ALERT_DELETED, val)
+  }
 
   useEffect(() => {
     setColumns([
@@ -44,6 +52,19 @@ export const AlertTable = (): JSX.Element => {
 
           return test
         },
+      },
+      {
+        dataIndex: 'id',
+        key: 'id',
+        render: (val: number) => (
+          <div>
+            <Button
+              onClick={() => handleDelete(val)}
+              icon={<DeleteOutlined />}
+              danger
+            />
+          </div>
+        ),
       },
     ])
   }, [gages])

@@ -9,6 +9,8 @@ export type Alert = {
   maximum?: number
   value: number
   gageId: number
+  updatedAt: Date
+  createdAd: Date
 }
 
 export type CreateAlertDTO = Pick<
@@ -20,6 +22,11 @@ export enum GageSource {
   USGS = 'usgs',
 }
 
+export type GageReading = {
+  value: number
+  metric: GageMetric
+}
+
 export type Gage = {
   id: number
   name: string
@@ -27,6 +34,7 @@ export type Gage = {
   siteId: string
   metric: string
   reading: number
+  readings: GageReading[]
   delta: number
   lastFetch: Date
   createdAt: Date

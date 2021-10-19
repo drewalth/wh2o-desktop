@@ -4,11 +4,12 @@ import axios from 'axios'
 import cors from 'cors'
 import * as http from 'http'
 import { gages } from './allGages'
-import { Gage, Reading, Alert, USGSFetchSchedule } from './database'
+import { Alert, Gage, Reading } from './database'
 import { Server } from 'socket.io'
-import { CreateAlertDTO, USGSGageData } from '../types'
+import { CreateAlertDTO, USGSGageData, Alert as TAlert } from '../types'
 import * as socketEvents from '../socketEvents'
 import { DateTime } from 'luxon'
+import { Notification } from 'electron'
 
 const app = express()
 app.use(express.urlencoded({ extended: true }))
@@ -36,7 +37,16 @@ app.get('/gage-sources', (req, res) => {
 
 io.on(socketEvents.CONNECTION, async (socket) => {
   const loadGages = async () => {
-    const val = await Gage.findAll()
+    const val = await Gage.findAll({
+      include: [
+        {
+          model: Reading,
+          limit: 4,
+          required: false,
+          order: [['id', 'DESC']],
+        },
+      ],
+    })
     socket.emit(socketEvents.LOAD_GAGES, val)
   }
 
@@ -68,9 +78,18 @@ io.on(socketEvents.CONNECTION, async (socket) => {
       })
   })
 
+  socket.on(socketEvents.ALERT_DELETED, (id: number) => {
+    Alert.destroy({
+      where: { id },
+    }).then(async () => {
+      await loadAlerts()
+      await loadGages()
+    })
+  })
+
   // @TODO CRUD with just sockets no express route handlers.
-  app.post('/gage', (req, res) => {
-    Gage.create(req.body)
+  app.post('/gage', async (req, res) => {
+    await Gage.create(req.body)
       .then(async () => {
         await loadGages()
         res.sendStatus(200)
@@ -97,42 +116,31 @@ io.on(socketEvents.CONNECTION, async (socket) => {
       })
   })
 
-  const scheduleInterval = '*/1 * * * *' // one minute
-  // const scheduleInterval = '*/2 * * * *' // two minutes
-  // const scheduleInterval = '*/5 * * * *' // five minutes
+  const emitUSGSNextFetch = async () => {
+    socket.emit(
+      'usgs-next-fetch',
+      DateTime.now()
+        .plus({
+          minutes: 5,
+        })
+        .toLocaleString(DateTime.TIME_SIMPLE)
+    )
+  }
 
-  cron.schedule(scheduleInterval, async () => {
-    const tooSoon = await USGSFetchSchedule.findOne({
-      where: { id: 1 },
-    })
-      .then(async (result) => {
-        if (result) {
-          const nextFetch = result.getDataValue('nextFetch')
-          console.log('nextFetch: ', nextFetch)
-          return true
-        } else {
-          await USGSFetchSchedule.create({
-            nextFetch: DateTime.local()
-              .plus({
-                minutes: 15,
-              })
-              .toISODate(),
-          })
-        }
-
-        return false
-      })
-      .catch((e) => {
-        console.error('error: ', e)
-      })
-
-    console.log('tooSoon: ', tooSoon)
-
+  const updateUSGSGages = async () => {
     try {
-      const gages = await Gage.findAll()
+      const gages = await Gage.findAll({
+        include: [
+          {
+            model: Alert,
+          },
+        ],
+      })
 
-      if (!gages.length) return
-
+      if (!gages.length) {
+        await emitUSGSNextFetch()
+        return
+      }
       let gageSiteIds = ''
       gages.forEach((g, i) => {
         if (i + 1 === gages.length) {
@@ -145,6 +153,7 @@ io.on(socketEvents.CONNECTION, async (socket) => {
 
       let gageData: USGSGageData
 
+      // eslint-disable-next-line no-constant-condition
       if (process.env.NODE_ENV === 'development') {
         gageData = require('./mockGageResponse.json')
       } else {
@@ -186,7 +195,7 @@ io.on(socketEvents.CONNECTION, async (socket) => {
           gageId,
           metric,
           name: item.sourceInfo.siteName,
-          reading: latestReading,
+          value: latestReading,
           // difference: !temperature ? (latest - old) : 0,
           tempC: temperature,
           tempF: temperature ? temperature * 1.8 + 32 : null,
@@ -211,27 +220,75 @@ io.on(socketEvents.CONNECTION, async (socket) => {
             ...el,
             gageId: el.gageId,
           })
+
+          const parent = gages.find((g) => g.getDataValue('id') === el.gageId)
+          const alerts: TAlert[] = parent.getDataValue('alerts')
+          const alertForMetric = alerts.find((a) => a.metric === el.metric)
+          if (
+            alertForMetric &&
+            DateTime.fromJSDate(alertForMetric.updatedAt).diffNow('hours')
+              .hours *
+              -1 >
+              6
+          ) {
+            const { criteria, value, maximum, minimum } = alertForMetric
+
+            if (criteria === 'below' && el.value < value) {
+              console.debug('BELOW ALERT')
+              new Notification({
+                title: parent.getDataValue('name'),
+                subtitle: el.value + ' ' + el.metric,
+              }).show()
+            }
+            if (criteria === 'above' && el.value > value) {
+              console.debug('ABOVE ALERT')
+            }
+
+            if (
+              criteria === 'between' &&
+              el.value < maximum &&
+              el.value > minimum
+            ) {
+              console.debug('BETWEEN ALERT')
+            }
+
+            await Alert.update(
+              {
+                updatedAt: new Date(),
+              },
+              {
+                where: {
+                  id: alertForMetric.id,
+                },
+              }
+            )
+          }
         })
       )
 
-      await loadGages()
-
-      await USGSFetchSchedule.update(
-        {
-          nextFetch: DateTime.local()
-            .plus({
-              minutes: 15,
-            })
-            .toISODate(),
-        },
-        {
-          where: { id: 1 },
-        }
-      )
+      await loadGages().then(() => {
+        emitUSGSNextFetch()
+      })
     } catch (e) {
       console.log('e', e)
     }
-  })
+  }
+
+  await updateUSGSGages()
+
+  // const scheduleInterval = '*/1 * * * *' // one minute
+  // const scheduleInterval = '*/2 * * * *' // two minutes
+  const scheduleInterval = '*/5 * * * *' // five minutes
+
+  cron.schedule(
+    scheduleInterval,
+    async () => {
+      await updateUSGSGages()
+    },
+    {
+      recoverMissedExecutions: false,
+    }
+  )
 })
 
 module.exports = app

@@ -1,23 +1,9 @@
 import React, { useEffect, useState } from 'react'
 import GageTable from './GageTable'
-import {
-  Button,
-  Modal,
-  Input,
-  notification,
-  Select,
-  AutoComplete,
-  Form,
-} from 'antd'
-import {
-  CreateGageDto,
-  GageEntry,
-  GageSource,
-  RequestStatus,
-  usState,
-} from '../../../types'
+import { Button, Modal, notification, Select, AutoComplete, Form } from 'antd'
+import { CreateGageDto } from '../../../types'
 import { httpClient, usStates } from '../../lib'
-import { useGagesContext } from '../Provider/GageProvider/GageContext'
+import { useGagesContext } from '../Provider/GageProvider'
 const defaultForm = {
   // source: GageSource.USGS,
   name: '',
@@ -26,8 +12,6 @@ const defaultForm = {
 
 export const Gage = (): JSX.Element => {
   const [createModalVisible, setCreateModalVisible] = useState(false)
-  const [createRequestStatus, setCreateRequestStatus] =
-    useState<RequestStatus>('success')
   const [createForm, setCreateForm] = useState<CreateGageDto>(defaultForm)
   const { gageSources, loadGageSources, gages } = useGagesContext()
   const [selectedState, setSelectedState] = useState<string>(
@@ -36,7 +20,9 @@ export const Gage = (): JSX.Element => {
   const [options, setOptions] = useState<{ value: string; label: string }[]>([])
 
   useEffect(() => {
-    loadGageSources(selectedState)
+    (async function () {
+      await loadGageSources(selectedState)
+    })()
   }, [selectedState])
 
   const onSearch = (searchText: string) => {
@@ -63,8 +49,6 @@ export const Gage = (): JSX.Element => {
 
   const handleOk = async () => {
     try {
-      setCreateRequestStatus('loading')
-
       const gageName = gageSources.find(
         (g) => g.siteId === createForm.siteId
       )?.gageName
@@ -80,7 +64,6 @@ export const Gage = (): JSX.Element => {
         placement: 'bottomRight',
       })
       handleClose()
-      setCreateRequestStatus('success')
     } catch (e) {
       console.log(e)
     }
@@ -127,7 +110,7 @@ export const Gage = (): JSX.Element => {
       >
         <Button
           type={'primary'}
-          disabled={gages.length >= 50}
+          disabled={gages.length >= 15}
           onClick={() => setCreateModalVisible(true)}
         >
           Add Gage

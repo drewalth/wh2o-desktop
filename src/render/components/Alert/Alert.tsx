@@ -105,7 +105,13 @@ export const Alert = (): JSX.Element => {
           </Form.Item>
         </Form>
       </Modal>
-      <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'flex-end',
+          marginBottom: 24,
+        }}
+      >
         <Button
           disabled={!gages.length}
           type={'primary'}
